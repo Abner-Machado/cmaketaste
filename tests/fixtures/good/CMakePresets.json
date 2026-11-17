@@ -1,0 +1,12 @@
+{
+  "version": 6,
+  "configurePresets": [
+    { "name": "debug",   "generator": "Ninja", "binaryDir": "build/debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "TIDYLIB_BUILD_TESTS": "ON" } },
+    { "name": "release", "generator": "Ninja", "binaryDir": "build/release",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+    { "name": "sanitize", "generator": "Ninja", "binaryDir": "build/asan",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer" } }
+  ]
+}

@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.12", "3.14"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Tests
+        run: python tests/test_cmaketaste.py
+
+      - name: The messy fixture fails the gate
+        shell: bash
+        run: |
+          set +e
+          python cmaketaste.py tests/fixtures/messy --fail-at 0.9 >/dev/null
+          code=$?
+          set -e
+          test "$code" -eq 1
+
+      - name: The good fixture passes the gate
+        run: python cmaketaste.py tests/fixtures/good --fail-at 0.5
+
+      - name: A directory with no CMake exits 2
+        shell: bash
+        run: |
+          mkdir -p empty-dir
+          set +e
+          python cmaketaste.py empty-dir >/dev/null 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 2
+
+      - name: The rule table in the README matches the code
+        shell: bash
+        run: |
+          python cmaketaste.py --list-rules | awk '{print $2}' | sort > rules.txt
+          grep -oE '`[a-z][a-z-]+`' README.md | tr -d '`' | sort -u > doc.txt
+          while read -r r; do
+            grep -qx "$r" doc.txt || { echo "rule $r is not in the README"; exit 1; }
+          done < rules.txt
